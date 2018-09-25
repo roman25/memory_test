@@ -1,7 +1,7 @@
 #include <QtWidgets>
 #include "memorytest.h"
 
-// Variables to set
+// Variables to set some parameters
 QString typeV4          = "V4";
 QString typeL06B        = "L06B";
 QString typeL95B        = "L95B";
