@@ -1,15 +1,17 @@
 #include <QtWidgets>
 #include "memorytest.h"
 
-// Variables to set some parameters
-QString typeV4          = "V4";
-QString typeL06B        = "L06B";
-QString typeL95B        = "L95B";
-QString configV4        = typeV4 + ".xlsm";
-QString configL95B      = typeL95B + ".xlsm";
-QString configL06B      = typeL06B + ".xlsm";
-QStringList extensions  = {"*.xlsm", "*.xlsx", "*.xls"};
-QString tempPathToConf  = "";
+// List of allowed IC type
+const QStringList memoryType  = {"V4", "L06B", "L95B"};
+
+// List of allowed fileextension
+const QStringList extensions  = {"*.xlsm", "*.xlsx", "*.xls"};
+
+// Paramters of lot name
+const QStringList productCode   = {"N"};
+const QStringList crystalCode   = {"V", "L", "B"};
+const QStringList countStack    = {"1", "2", "4", "8"};
+const QStringList status        = {"P", "E", "Q", "R"};
 
 Window::Window(QWidget *parent):QWidget(parent)
 {
@@ -22,8 +24,7 @@ Window::Window(QWidget *parent):QWidget(parent)
     resize(screenGeometry.width() / 2, screenGeometry.height() / 3);
 
     // Define temporary list of used ICs. It needs for initialization of combobox
-    const QStringList usedMemoryTypes = { "L95B", "L06B", "V4" };
-    fileComboBox = createComboBox(usedMemoryTypes);
+    fileComboBox = createComboBox(memoryType);
 
     // Create combobox with initial value which informs about some action
     configComboBox = createComboBox({"Need to set path to config files to get list of the files"});
@@ -124,39 +125,6 @@ void Window::updateConfigBox(QComboBox *configComboBox, QStringList listValues)
         configComboBox->addItem(listValues[i]);
 }
 
-void Window::updateConfigBox(QComboBox *configComboBox, QString inputValue)
-{
-    /*!
-        Set predefined value for box. You have no choice of elements
-    */
-
-    // Remove any elements in the box
-    configComboBox->clear();
-
-    // Check condition and choose config file name
-    QString confFile = "";
-    if (inputValue.startsWith("MV"))
-        confFile = configV4;
-    else if (inputValue.startsWith("ML"))
-        confFile = configL06B;
-    else if (inputValue.startsWith("MB"))
-        confFile = configL95B;
-
-    // Get full path to config
-    QString path = lineConfig->text();
-    const QString fullPath = path + "\\" + confFile;
-
-    // Check if config file is exists
-    bool isExists = QFileInfo::exists(fullPath);
-    if (isExists)
-        configComboBox->addItem(confFile);
-    else
-        configComboBox->addItem("No config file!!!");
-
-    configComboBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
-
-}
-
 void Window::findFilesInDirectory(QString pathToDirectory)
 {
     /*!
@@ -188,12 +156,12 @@ static void updateComboBox(QComboBox *comboBox, QString inputValue)
 
     // Set type of IC based on input value
     QString usedType = "";
-    if (inputValue.startsWith("MV"))
-        usedType = typeV4;
-    else if (inputValue.startsWith("ML"))
-        usedType = typeL06B;
-    else if (inputValue.startsWith("MB"))
-        usedType = typeL95B;
+    if (inputValue.startsWith(productCode[0] + crystalCode[0]))
+        usedType = memoryType[0];
+    else if (inputValue.startsWith(productCode[0] + crystalCode[1]))
+        usedType = memoryType[1];
+    else if (inputValue.startsWith(productCode[0] + crystalCode[2]))
+        usedType = memoryType[2];
 
     // Add value to the box
     comboBox->addItem(usedType);
@@ -213,42 +181,40 @@ void Window::getTestCase()
     inputValue = inputValue.toUpper();
 
     // Define variables for forming name of lot
-    QString productCode = "M";
-    QString crystalCode = "";
-    QString countStack  = "";
-    QString status      = "";
-    QString countLots   = "[0-9]{3}"; // Allows use a number with 3 digits
-    QString endOfLine   = "$";
-    QString optionalLot = "(\\.[0-9]{3})?"; // Allows use dot and a number with 3 digits
+    QString testCase        = "";
+    QString tempStackValue  = "";
+    QString countLots       = "[0-9]{4}"; // Allows use a number with 3 digits
+    QString endOfLine       = "$";
 
     // Check of some input parameters and set parameters of test
-    if (inputValue.startsWith(productCode + "V"))
+    if (inputValue.startsWith(productCode[0] + crystalCode[0]))
     {
-        crystalCode = "V";
-        countStack  = "1";
-        status      = "P";
+        // Form output string
+        tempStackValue  = countStack[0];
+        testCase        = productCode[0] + crystalCode[0] + tempStackValue + status[0];
+
     }
-    else if (inputValue.startsWith(productCode + "L2") )
+    else if (inputValue.startsWith(productCode[0] + crystalCode[1] + countStack[1]) )
     {
-        crystalCode = "L";
-        countStack  = "2";
-        status      = "E";
+        // Form output string
+        tempStackValue  = countStack[1];
+        testCase        = productCode[0] + crystalCode[1] + tempStackValue + status[1];
     }
-    else if (inputValue.startsWith(productCode + "L4") )
+    else if (inputValue.startsWith(productCode[0] + crystalCode[1] + countStack[2]) )
     {
-        crystalCode = "L";
-        countStack  = "4";
-        status      = "Q";
+        // Form output string
+        tempStackValue  = countStack[2];
+        testCase        = productCode[0] + crystalCode[1] + tempStackValue + status[2];
     }
-    else if (inputValue.startsWith((productCode + "B")))
+    else if (inputValue.startsWith(productCode[0] + crystalCode[2] + countStack[3]) )
     {
-        crystalCode = "B";
-        countStack  = "8";
-        status      = "Q";
+        // Form output string
+        tempStackValue  = countStack[3];
+        testCase        = productCode[0] + crystalCode[2] + tempStackValue + status[3];
     }
 
-    // Form output string
-    QString testCase = productCode + crystalCode + countStack + status + countLots + optionalLot + endOfLine;
+    // Create output string
+    testCase = testCase + countLots + endOfLine;
 
     // Verify input name is consistent with required template
     QRegularExpression re(testCase);
@@ -259,7 +225,7 @@ void Window::getTestCase()
     if (hasMatch)
     {
         // Set text and block edit it
-        lineCountStack->setText(countStack);
+        lineCountStack->setText(tempStackValue);
         lineCountStack->setReadOnly(true);
 
         // Change color of line when it blocked
@@ -270,15 +236,14 @@ void Window::getTestCase()
 
         // Update widgets
         updateComboBox(fileComboBox, inputValue);
-        updateConfigBox(configComboBox, inputValue);
     }
     else
     {
         // Make boxes empty when  some errors in input string
         updateComboBox(fileComboBox, "");
-        updateConfigBox(configComboBox, "");
+        QStringList tempList = {""}; // Empty value will be show when no match with input
+        updateConfigBox(configComboBox, tempList);
     }
-
 }
 
 void Window::getInputParameters()
